@@ -1,0 +1,66 @@
+# Test ability to wire together shell spouts/bolts
+---
+
+# topology definition
+# name to be used when submitting
+name: "kafka-reader"
+
+# Components - constructors, property setters, and builder arguments.
+# Currently, components must be declared in the order they are referenced
+components:
+  - id: "stringScheme"
+    className: "storm.kafka.StringScheme"
+
+  - id: "stringMultiScheme"
+    className: "backtype.storm.spout.SchemeAsMultiScheme"
+    constructorArgs:
+      - ref: "stringScheme"
+
+  - id: "zkHosts"
+    className: "storm.kafka.ZkHosts"
+    constructorArgs:
+      - "${ENV-ZKHOSTS}"
+
+  - id: "spoutConfig"
+    className: "storm.kafka.SpoutConfig"
+    constructorArgs:
+      # brokerHosts
+      - ref: "zkHosts"
+      # topic
+      - "${ENV-KAFKATOPIC}"
+      # zkRoot
+      - ""
+      # id
+      - "readerid"
+    properties:
+      - name: "scheme"
+        ref: "stringMultiScheme"
+
+# Topology configuration
+config:
+  topology.workers: 2
+
+# Spout definitions
+spouts:
+  - id: "kafka-spout"
+    className: "storm.kafka.KafkaSpout"
+    constructorArgs:
+      - ref: "spoutConfig"
+    # Set to the number of partitions for the topic
+    parallelism: 8
+
+# Bolt definitions
+bolts:
+  - id: "printerbolt"
+    className: "com.microsoft.example.PrinterBolt"
+    parallelism: 8
+    # ...
+
+# Stream definitions
+
+streams:
+  - name: "kafka --> print" # name isn't used (placeholder for logging, UI, etc.)
+    from: "kafka-spout"
+    to: "printerbolt"
+    grouping:
+      type: SHUFFLE

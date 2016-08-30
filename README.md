@@ -1,7 +1,7 @@
 ---
-services:HDInsight
-platforms: Java
-author: Blackmist
+services: hdinsight
+platforms: java
+author: blackmist
 ---
 
 # Use Apache Kafka with Apache Storm on HDInsight

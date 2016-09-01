@@ -8,6 +8,8 @@ author: blackmist
 
 This is a basic example of reading and writing string data to Kafka on a Linux-based Storm on HDInsight cluster.
 
+__NOTE__: Apache Kafka is currently provided as a preview with Linux-based Storm on HDInsight clusters.
+
 ## Understanding the code
 
 This project contains two topologys:

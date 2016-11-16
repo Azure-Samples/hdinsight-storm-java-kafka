@@ -10,24 +10,42 @@ name: "kafka-writer"
 components:
   # Topic selector for KafkaBolt
   - id: "topicSelector"
-    className: "storm.kafka.bolt.selector.DefaultTopicSelector"
+    className: "org.apache.storm.kafka.bolt.selector.DefaultTopicSelector"
     constructorArgs:
       - "${ENV-KAFKATOPIC}"
 
   # Mapper for KafkaBolt
   - id: "kafkaMapper"
-    className: "storm.kafka.bolt.mapper.FieldNameBasedTupleToKafkaMapper"
+    className: "org.apache.storm.kafka.bolt.mapper.FieldNameBasedTupleToKafkaMapper"
     constructorArgs:
       - "key"
       - "message"
 
+  # Producer properties for KafkaBolt
+  - id: "producerProperties"
+    className: "java.util.Properties"
+    configMethods:
+      - name: "put"
+        args:
+          - "bootstrap.servers"
+          - "${ENV-KAFKABROKERS}"
+      - name: "put"
+        args:
+          - "acks"
+          - "1"
+      - name: "put"
+        args:
+          - "key.serializer"
+          - "org.apache.kafka.common.serialization.StringSerializer"
+      - name: "put"
+        args:
+          - "value.serializer"
+          - "org.apache.kafka.common.serialization.StringSerializer"
+ 
+
 # Topology configuration
 config:
   topology.workers: 2
-  kafka.broker.properties:
-    metadata.broker.list: "${ENV-KAFKABROKERS}"
-    request.returned.acks: "1"
-    serializer.class: "kafka.serializer.StringEncoder"
 
 # Spout definitions
 spouts:
@@ -38,9 +56,11 @@ spouts:
 # Bolt definitions
 bolts:
   - id: "kafka-bolt"
-    className: "storm.kafka.bolt.KafkaBolt"
+    className: "org.apache.storm.kafka.bolt.KafkaBolt"
     parallelism: 8
     configMethods:
+    - name: "withProducerProperties"
+      args: [ref: "producerProperties"]
     - name: "withTopicSelector"
       args: [ref: "topicSelector"]
     - name: "withTupleToKafkaMapper"

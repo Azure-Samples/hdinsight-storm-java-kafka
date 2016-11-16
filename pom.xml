@@ -8,7 +8,10 @@
     <name>KafkaTopology</name>
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <storm.version>0.10.0</storm.version>
+        <!-- The version of Storm with HDInsight 3.5 -->
+        <storm.version>1.0.1</storm.version>
+        <!-- The version of Kafka with HDInsight 3.5 -->
+        <kafka.version>0.10.0.0</kafka.version>
     </properties>
     <dependencies>
         <dependency>
@@ -20,9 +23,6 @@
         <dependency>
             <groupId>org.apache.storm</groupId>
             <artifactId>flux-core</artifactId>
-            <!-- Storm 0.10.0 is for HDInsight 3.3 and 3.4.
-                To find the version information for earlier HDInsight cluster
-                versions, see https://azure.microsoft.com/en-us/documentation/articles/hdinsight-component-versioning/ -->
             <version>${storm.version}</version>
         </dependency>
         <!-- Storm components for talking to Kafka -->
@@ -35,7 +35,7 @@
         <dependency>
             <groupId>org.apache.kafka</groupId>
             <artifactId>kafka_2.10</artifactId>
-            <version>0.9.0.0</version>
+            <version>${kafka.version}</version>
             <!-- Exclude stuff to prevent exceptions on collision with existing stuff in Storm -->
             <exclusions>
                 <exclusion>
@@ -63,8 +63,8 @@
                 <configuration>
                     <!-- Use the version of Java that
                          HDInsight expects -->
-                    <source>1.7</source>
-                    <target>1.7</target>
+                    <source>1.8</source>
+                    <target>1.8</target>
                 </configuration>
             </plugin>
             <!-- build an uber jar -->
@@ -79,6 +79,9 @@
                                 implementation="org.apache.maven.plugins.shade.resource.ApacheLicenseResourceTransformer"/>
                         <transformer implementation="org.apache.maven.plugins.shade.resource.ServicesResourceTransformer" />
                         <!-- We're using Flux, so refer to it as main -->
+                        <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
+                            <mainClass>org.apache.storm.flux.Flux</mainClass>
+                        </transformer>
                         <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
                             <mainClass>org.apache.storm.flux.Flux</mainClass>
                         </transformer>

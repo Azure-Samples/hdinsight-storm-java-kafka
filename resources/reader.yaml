@@ -9,20 +9,20 @@ name: "kafka-reader"
 # Currently, components must be declared in the order they are referenced
 components:
   - id: "stringScheme"
-    className: "storm.kafka.StringScheme"
+    className: "org.apache.storm.kafka.StringScheme"
 
   - id: "stringMultiScheme"
-    className: "backtype.storm.spout.SchemeAsMultiScheme"
+    className: "org.apache.storm.spout.SchemeAsMultiScheme"
     constructorArgs:
       - ref: "stringScheme"
 
   - id: "zkHosts"
-    className: "storm.kafka.ZkHosts"
+    className: "org.apache.storm.kafka.ZkHosts"
     constructorArgs:
-      - "${ENV-ZKHOSTS}"
+      - "${ENV-KAFKAZKHOSTS}"
 
   - id: "spoutConfig"
-    className: "storm.kafka.SpoutConfig"
+    className: "org.apache.storm.kafka.SpoutConfig"
     constructorArgs:
       # brokerHosts
       - ref: "zkHosts"
@@ -43,7 +43,7 @@ config:
 # Spout definitions
 spouts:
   - id: "kafka-spout"
-    className: "storm.kafka.KafkaSpout"
+    className: "org.apache.storm.kafka.KafkaSpout"
     constructorArgs:
       - ref: "spoutConfig"
     # Set to the number of partitions for the topic
@@ -51,9 +51,9 @@ spouts:
 
 # Bolt definitions
 bolts:
-  - id: "printerbolt"
-    className: "com.microsoft.example.PrinterBolt"
-    parallelism: 8
+  - id: "logger-bolt"
+    className: "com.microsoft.example.LoggerBolt"
+    parallelism: 1
     # ...
 
 # Stream definitions
@@ -61,6 +61,6 @@ bolts:
 streams:
   - name: "kafka --> print" # name isn't used (placeholder for logging, UI, etc.)
     from: "kafka-spout"
-    to: "printerbolt"
+    to: "logger-bolt"
     grouping:
       type: SHUFFLE

@@ -3,7 +3,7 @@ usage() {
   echo >&2 "$@"
 }
 
-# Check that the basename and password were provided
+# Check that the basename and password were provided 
 [ "$#" -eq 2 ] || usage "2 arguments (the Kafka cluster name and password) are required, $# provided."
 # Save to variables if they were provided
 KAFKANAME=$1

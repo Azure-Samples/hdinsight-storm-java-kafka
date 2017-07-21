@@ -8,9 +8,9 @@
     <name>KafkaTopology</name>
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <!-- The version of Storm with HDInsight 3.5 -->
-        <storm.version>1.0.1</storm.version>
-        <!-- The version of Kafka with HDInsight 3.5 -->
+        <!-- The version of Storm with HDInsight 3.6 -->
+        <storm.version>1.1.0</storm.version>
+        <!-- The version of Kafka with HDInsight 3.6 -->
         <kafka.version>0.10.0.0</kafka.version>
     </properties>
     <dependencies>
@@ -55,7 +55,6 @@
     </dependencies>
     <build>
         <plugins>
-
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>

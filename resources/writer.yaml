@@ -12,7 +12,7 @@ components:
   - id: "topicSelector"
     className: "org.apache.storm.kafka.bolt.selector.DefaultTopicSelector"
     constructorArgs:
-      - "${ENV-KAFKATOPIC}"
+      - "${kafka.topic}"
 
   # Mapper for KafkaBolt
   - id: "kafkaMapper"
@@ -28,7 +28,7 @@ components:
       - name: "put"
         args:
           - "bootstrap.servers"
-          - "${ENV-KAFKABROKERS}"
+          - "${kafka.broker.hosts}"
       - name: "put"
         args:
           - "acks"

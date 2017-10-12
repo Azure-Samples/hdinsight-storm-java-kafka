@@ -19,7 +19,7 @@ components:
   - id: "zkHosts"
     className: "org.apache.storm.kafka.ZkHosts"
     constructorArgs:
-      - "${ENV-KAFKAZKHOSTS}"
+      - "${kafka.zookeeper.hosts}"
 
   - id: "spoutConfig"
     className: "org.apache.storm.kafka.SpoutConfig"
@@ -27,7 +27,7 @@ components:
       # brokerHosts
       - ref: "zkHosts"
       # topic
-      - "${ENV-KAFKATOPIC}"
+      - "${kafka.topic}"
       # zkRoot
       - ""
       # id

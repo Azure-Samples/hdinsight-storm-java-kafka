@@ -8,7 +8,7 @@ author: blackmist
 
 This is a basic example of reading and writing string data to a Kafka on HDInsight cluster from Storm on HDInsight cluster.
 
-__NOTE__: Apache Kafka and Storm are available as two different cluster types. HDInsight cluster types are tuned for the performance of a specific technology; in this case, Kafka and Storm. To use both together, you must create an Azure Virtual Network and then create both a Kafka and Storm cluster on the virtual network. For an example on how to do this using an Azure Resource Manager template, see [https://hditutorialdata.blob.core.windows.net/armtemplates/create-linux-based-kafka-storm-cluster-in-vnet-v2.json](https://hditutorialdata.blob.core.windows.net/armtemplates/create-linux-based-kafka-storm-cluster-in-vnet-v2.json). For an example of using the template with this example, see [Use Apache Storm with Kafka on HDInsight (preview)](https://docs.microsoft.com/azure/hdinsight/hdinsight-apache-storm-with-kafka).
+__NOTE__: Apache Kafka and Storm are available as two different cluster types. HDInsight cluster types are tuned for the performance of a specific technology; in this case, Kafka and Storm. To use both together, you must create an Azure Virtual Network and then create both a Kafka and Storm cluster on the virtual network. For an example on how to do this using an Azure Resource Manager template, see the [create-kafka-storm-clusters-in-vnet.json](create-kafka-storm-clusters-in-vnet.json) document. For an example of using the template with this example, see [Use Apache Storm with Kafka on HDInsight](https://docs.microsoft.com/azure/hdinsight/hdinsight-apache-storm-with-kafka).
 
 ## Understanding the code
 
@@ -50,7 +50,7 @@ NOTE: These steps assume that you have a functioning Java development environmen
 
 5. Copy the KafkaTopology-1.0-SNAPSHOT.jar file to your Storm on HDInsight cluster. For example, `scp KafkaTopology-1.0-SNAPSHOZT.jar myname@mystormcluster-ssh.azurehdinsight.net:`
 
-6. Find the Zookeeper and Broker hosts for the Kafka cluster. The following examples show how to do this using PowerShell and Curl:
+6. Find the Zookeeper and Broker hosts for the **Kafka** cluster. The following examples show how to do this using PowerShell and Curl:
 
     * Brokers:
 
@@ -90,15 +90,7 @@ NOTE: These steps assume that you have a functioning Java development environmen
 
 8. Connect to Storm cluster using SSH. For example, `ssh sshuser@clustername-ssh.azurehdinsight.net`.
 
-9. From the SSH connection, use the following command to create the Kafka topic used by this example:
-
-    ```bash
-    /usr/hdp/current/kafka-broker/bin/kafka-topics.sh --create --replication-factor 3 --partitions 8 --topic stormtopic --zookeeper $KAFKAZKHOSTS
-    ```
-
-    Replace `$KAFKAZKHOSTS` with the Zookeeper hosts returned previously.
-
-10. Use the following command to start the writer topology:
+9. Use the following command to start the writer topology:
 
         storm jar KafkaTopology-1.0-SNAPSHOT.jar org.apache.storm.flux.Flux --remote -R /writer.yaml --filter dev.properties
 
@@ -109,7 +101,9 @@ NOTE: These steps assume that you have a functioning Java development environmen
     * __-R /writer.yaml__: Use the __writer.yaml__ to configure the topology. `-R` indicates that this is a resource that is included in the jar file. It's in the root of the jar, so `/writer.yaml` is the path to it.
     * __--filter dev.properties__: Use the contents of dev.properties when starting the topology. This allows Flux to pick up the Kafka broker, Zookeeper, and topic values from the `dev.properties`. file. Flux uses these values in the reader.yaml file in place of the `${...}` entries. For example, `${kafka.topic}` is replaced by the value of `kafka.topic:` from the `dev.properties` file.
 
-9. Once the topology has started, use the following command from the SSH connection to view messages written to the __stormtopic__ topic:
+10. Once the topology has started, use the following command from the SSH connection to view messages written to the __stormtopic__ topic:
+
+    __NOTE__: Replace `$KAFKAZKHOSTS` with the Zookeeper host information for the __Kafka__ cluster.
 
          /usr/hdp/current/kafka-broker/bin/kafka-console-consumer.sh --zookeeper $KAFKAZKHOSTS --from-beginning --topic stormtopic
 
@@ -137,3 +131,16 @@ NOTE: These steps assume that you have a functioning Java development environmen
 
         storm stop kafka-writer
         storm stop kafka-reader
+
+
+## Troubleshooting
+
+By default, Kafka on HDInsight does not enable the automatic creation of Kafka topics. This example assumes that you have configured Kafka to enable automatic topic creation; the Azure Resource Manager Template included in this project demonstrates how to enable this using a template:
+
+```json
+"kafka-broker": {
+    "auto.create.topics.enable": "true"
+}
+```
+
+If you have not enabled the auto-creation of topics, then you must manually create the topic before starting the Storm topologies. For information on creating Kafka topics, see the [Start with Kafka on HDInsight](https://docs.microsoft.com/azure/hdinsight/kafka/apache-kafka-get-started) document.

@@ -36,6 +36,35 @@ components:
       - name: "scheme"
         ref: "stringMultiScheme"
 
+    # How often to sync files to HDFS; every 1000 tuples.
+  - id: "syncPolicy"
+    className: "org.apache.storm.hdfs.bolt.sync.CountSyncPolicy"
+    constructorArgs:
+      - 1
+
+  # Rotate files when they hit 5 MB
+  - id: "rotationPolicy"
+    className: "org.apache.storm.hdfs.bolt.rotation.FileSizeRotationPolicy"
+    constructorArgs:
+      - 5
+      - "KB"
+
+  # File format; read the directory from filters at run time, and use a .txt extension when writing.
+  - id: "fileNameFormat"
+    className: "org.apache.storm.hdfs.bolt.format.DefaultFileNameFormat"
+    configMethods:
+      - name: "withPath"
+        args: ["${hdfs.write.dir}"]
+      - name: "withExtension"
+        args: [".txt"]
+
+  # Internal file format; fields delimited by `|`.
+  - id: "recordFormat"
+    className: "org.apache.storm.hdfs.bolt.format.DelimitedRecordFormat"
+    configMethods:
+      - name: "withFieldDelimiter"
+        args: ["|"]
+
 # Topology configuration
 config:
   topology.workers: 2
@@ -54,13 +83,36 @@ bolts:
   - id: "logger-bolt"
     className: "com.microsoft.example.LoggerBolt"
     parallelism: 1
-    # ...
+  
+  - id: "hdfs-bolt"
+    className: "org.apache.storm.hdfs.bolt.HdfsBolt"
+    configMethods:
+      - name: "withConfigKey"
+        args: ["hdfs.config"]
+      - name: "withFsUrl"
+        args: ["${hdfs.url}"]
+      - name: "withFileNameFormat"
+        args: [ref: "fileNameFormat"]
+      - name: "withRecordFormat"
+        args: [ref: "recordFormat"]
+      - name: "withRotationPolicy"
+        args: [ref: "rotationPolicy"]
+      - name: "withSyncPolicy"
+        args: [ref: "syncPolicy"]
+    parallelism: 1
 
 # Stream definitions
 
 streams:
-  - name: "kafka --> print" # name isn't used (placeholder for logging, UI, etc.)
+  - name: "kafka --> log" # name isn't used (placeholder for logging, UI, etc.)
     from: "kafka-spout"
     to: "logger-bolt"
+    grouping:
+      type: SHUFFLE
+  
+  # stream data to file
+  - name: "kafka --> hdfs"
+    from: "kafka-spout"
+    to: "hdfs-bolt"
     grouping:
       type: SHUFFLE

@@ -91,7 +91,7 @@
       "properties": {}
     },
     {
-      "name": "[variables('kafkaClusterName')]",
+      "name": "[parameters('kafkaClusterName')]",
       "type": "Microsoft.HDInsight/clusters",
       "location": "[resourceGroup().location]",
       "apiVersion": "2015-03-01-preview",

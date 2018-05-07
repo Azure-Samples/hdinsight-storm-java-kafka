@@ -20,7 +20,7 @@ This project contains two topologys:
 
 * __KafkaReader__: Defined by the __reader.yaml__ file, this topology reads data from Kafka using the KafkaSpout provided with Apache Storm, then logs the data to stdout.
 
-    This topology uses a custom __LoggerBolt__ component to log data read from Kafka.
+    This topology uses the HDFSBolt to log data read from Kafka to the HDFS compatible storage on the Storm cluster.
 
 ### Flux
 
@@ -39,6 +39,14 @@ Both topologies use the `dev.properties` file at run time to provide the values 
 NOTE: These steps assume that you have a functioning Java development environment, including Maven 3.x
 
 1. Create an Azure Virtual Network that contains a Storm and Kafka cluster. Both clusters must be HDInsight 3.6.
+
+2. To enable the HDFSBolt to work with the HDFS compatible storage used by HDInsight, use the following script action on the Storm cluster:
+
+    * Script URL: https://hdiconfigactions2.blob.core.windows.net/stormextlib/stormextlib.sh
+    * Applies to: Nimbus and supervisor nodes
+    * Persist: Yes
+
+    For information on using the script, see the [Customize HDInsight with script actions](https://docs.microsoft.com/azure/hdinsight/hdinsight-hadoop-customize-cluster-linux) document.
 
 2. Download this repository
 
@@ -86,11 +94,21 @@ NOTE: These steps assume that you have a functioning Java development environmen
 
 7. Modify the `dev.properties` file to add the Zookeeper and Broker values from the previous step. Just copy and paste the string of comma-delimited fully qualified domain names that were returned.
 
+    __NOTE__: The `hdfs.url` property in the `dev.properties` file is configured for a Storm cluster that uses an Azure Storage account. If your cluster uses Data Lake Store, change this value from `wasb` to `adl`.
+
 8. Upload the `dev.properties` file to the Storm cluster.
 
-8. Connect to Storm cluster using SSH. For example, `ssh sshuser@clustername-ssh.azurehdinsight.net`.
+9. Connect to the Kafka cluster using SSH. For example `ssh sshuser@kafkaclustername-ssh.azurehdinsight.net`.
 
-9. Use the following command to start the writer topology:
+10. To create the topic used by the topology, use the following command. Replace `$KAFKAZKHOSTS` with the Zookeeper information retrieved earlier:
+
+    ```bash
+    /usr/hdp/current/kafka-broker/bin/kafka-topics.sh --create --replication-factor 3 --partitions 8 --topic stormtopic --zookeeper $KAFKAZKHOSTS
+    ```
+
+11. Connect to Storm cluster using SSH. For example, `ssh sshuser@stormclustername-ssh.azurehdinsight.net`.
+
+12. Use the following command to start the writer topology:
 
         storm jar KafkaTopology-1.0-SNAPSHOT.jar org.apache.storm.flux.Flux --remote -R /writer.yaml --filter dev.properties
 
@@ -98,10 +116,10 @@ NOTE: These steps assume that you have a functioning Java development environmen
 
     * __org.apache.storm.flux.Flux__: Use Flux to configure and run this topology.
     * __--remote__: Submit the topology to Nimbus. This runs the topology in a distributed fashion using the worker nodes in the cluster.
-    * __-R /writer.yaml__: Use the __writer.yaml__ to configure the topology. `-R` indicates that this is a resource that is included in the jar file. It's in the root of the jar, so `/writer.yaml` is the path to it.
+    * __-R /writer.yaml__: Use the __writer.yaml__ topology. `-R` indicates that this is a resource that is included in the jar file. It's in the root of the jar, so `/writer.yaml` is the path to it.
     * __--filter dev.properties__: Use the contents of dev.properties when starting the topology. This allows Flux to pick up the Kafka broker, Zookeeper, and topic values from the `dev.properties`. file. Flux uses these values in the reader.yaml file in place of the `${...}` entries. For example, `${kafka.topic}` is replaced by the value of `kafka.topic:` from the `dev.properties` file.
 
-10. Once the topology has started, use the following command from the SSH connection to view messages written to the __stormtopic__ topic:
+13. Once the topology has started, use the following command from the SSH connection to view messages written to the __stormtopic__ topic:
 
     __NOTE__: Replace `$KAFKAZKHOSTS` with the Zookeeper host information for the __Kafka__ cluster.
 
@@ -109,38 +127,25 @@ NOTE: These steps assume that you have a functioning Java development environmen
 
     This will start listing the random sentences that the topology is writing to the topic. Use Ctrl-c to stop the script.
 
-10. use the following command to start the reader topology:
+14. use the following command to start the reader topology:
 
         storm jar KafkaTopology-1.0-SNAPSHOT.jar org.apache.storm.flux.Flux --remote -R /reader.yaml --filter dev.properties
 
-11. Once the topology starts, it should start logging information similar to the following to the Storm log:
+15. Wait a minute and then use the following command to view the files created by the reader topology:
 
-        2016-11-04 17:47:14.907 c.m.e.LoggerBolt [INFO] Received data: four score and seven years ago
-        2016-11-04 17:47:14.907 STDIO [INFO] the cow jumped over the moon
-        2016-11-04 17:47:14.908 c.m.e.LoggerBolt [INFO] Received data: the cow jumped over the moon
-        2016-11-04 17:47:14.911 STDIO [INFO] snow white and the seven dwarfs
-        2016-11-04 17:47:14.911 c.m.e.LoggerBolt [INFO] Received data: snow white and the seven dwarfs
-        2016-11-04 17:47:14.932 STDIO [INFO] snow white and the seven dwarfs
-        2016-11-04 17:47:14.932 c.m.e.LoggerBolt [INFO] Received data: snow white and the seven dwarfs
-        2016-11-04 17:47:14.969 STDIO [INFO] an apple a day keeps the doctor away
-        2016-11-04 17:47:14.970 c.m.e.LoggerBolt [INFO] Received data: an apple a day keeps the doctor away
+    ```bash
+    hdfs dfs -ls /stormdata
+    ```
 
-    To view this information, use the Storm UI for the cluster (https://CLUSTERNAME.azurehdinsight.net/stormui) and drill down into the LoggerBolt component for the topology
+    The output is similar to the following text:
 
-13. Use the following command to stop the writer:
+        Found 173 items
+        -rw-r--r--   1 storm supergroup       5137 2018-04-09 19:00 /stormdata/hdfs-bolt-4-0-1523300453088.txt
+        -rw-r--r--   1 storm supergroup       5128 2018-04-09 19:00 /stormdata/hdfs-bolt-4-1-1523300453624.txt
+        -rw-r--r--   1 storm supergroup       5131 2018-04-09 19:00 /stormdata/hdfs-bolt-4-10-1523300455170.txt
+        ...
+
+16. Use the following command to stop the writer:
 
         storm stop kafka-writer
         storm stop kafka-reader
-
-
-## Troubleshooting
-
-By default, Kafka on HDInsight does not enable the automatic creation of Kafka topics. This example assumes that you have configured Kafka to enable automatic topic creation; the Azure Resource Manager Template included in this project demonstrates how to enable this using a template:
-
-```json
-"kafka-broker": {
-    "auto.create.topics.enable": "true"
-}
-```
-
-If you have not enabled the auto-creation of topics, then you must manually create the topic before starting the Storm topologies. For information on creating Kafka topics, see the [Start with Kafka on HDInsight](https://docs.microsoft.com/azure/hdinsight/kafka/apache-kafka-get-started) document.

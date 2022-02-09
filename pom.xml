@@ -13,7 +13,7 @@
         <!-- The version of Kafka with HDInsight 3.6 -->
         <kafka.version>0.10.0.0</kafka.version>
         <!-- The version of Hadoop with HDInsight 3.6 -->
-        <hadoop.version>2.7.3</hadoop.version>
+        <hadoop.version>2.10.1</hadoop.version>
     </properties>
     <dependencies>
         <dependency>
